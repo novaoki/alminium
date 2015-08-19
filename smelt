@@ -25,7 +25,7 @@ if [ "$USER" != 'root' ]
 then
     echo "ALMiniumのインストールはルートユーザで行う必要があります。"
     echo "rootユーザもしくはsudoで実行してください。"
-    exit 1  
+    exit 1
 fi
 
 if [ ! -d cache ]
@@ -269,6 +269,31 @@ cd $INSTALL_DIR
 
 echo "*** execute bundle ***"
 bundle install --path vendor/bundler --without development test postgresql sqlite
+popd
+
+# install plugins
+source inst-script/redmine-plugins
+
+# upgrade rspec
+sed -i -e "s/2.11.0/3.0/g" $INSTALL_DIR/plugins/redmine_backlogs/Gemfile
+sed -i -e "s/2.11.0/3.0/g" $INSTALL_DIR/plugins/redmine_backlogs/Gemfile
+sed -i -e "s/2.11.0/3.0/g" $INSTALL_DIR/plugins/redmine_hudson/Gemfile.org
+sed -i -e "s/2.11.0/3.0/g" $INSTALL_DIR/plugins/redmine_hudson/Gemfile.org
+
+CHECKUNSHIFT=`sed -n '1,1p' $INSTALL_DIR/plugins/redmine_charts/lib/redmine_charts/line_data_converter.rb`
+if [ "$CHECKUNSHIFT" = "require 'redmine/i18n'" ]
+then
+  sed -i "1i $:.unshift '/opt/alminium/lib'" $INSTALL_DIR/plugins/redmine_charts/lib/redmine_charts/line_data_converter.rb
+fi
+
+pushd .
+cd $INSTALL_DIR/plugins/redmine_code_review
+sudo -u apache hg checkout 0.6.4
+popd
+
+
+pushd .
+cd $INSTALL_DIR
 
 bundle exec $RAKE generate_secret_token
 bundle exec $RAKE db:migrate
@@ -276,8 +301,6 @@ echo "ja" |RAILS_ENV=production bundle exec $RAKE redmine:load_default_data
 
 popd
 
-# install plugins
-source inst-script/redmine-plugins
 
 # Customize
 echo "*** run initialize SQL ***"
@@ -304,7 +327,10 @@ fi
 if [ "$ENABLE_JENKINS" = "y" ]
 then
   source inst-script/$OS/jenkins-install
-fi  
+fi
+
+mkdir -p /var/www/.passenger
+chown apache:apache /var/www/.passenger
 
 source inst-script/$OS/post-install
 

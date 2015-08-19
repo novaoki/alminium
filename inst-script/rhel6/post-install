@@ -8,59 +8,67 @@ fi
 
 if [ ! -f /etc/httpd/conf.d/redmine.conf ]
 then
-  PASSENGER_VERSION=`passenger-config  --version`
-  sed 's/%HOSTNAME%/'$HOSTNAME'/' inst-script/rhel6/httpd-redmine.conf | \
-      sed 's/%PASSENGER_VERSION%/'$PASSENGER_VERSION'/' |
-	  if [ "$SSL" = "y" ]
-	  then 
-	      sed 's/#Rewrite/Rewrite/'
-	  else
-	      cat
-	  fi > /etc/httpd/conf.d/redmine.conf
-  sed 's/%HOSTNAME%/'$HOSTNAME'/' inst-script/rhel6/httpd-vcs.conf >  /etc/httpd/conf.d/vcs.conf     
+  PASSENGER_PATH=`find / |grep mod_passenger.so`
+  PASSENGER_DIR=`echo ${PASSENGER_PATH/'/buildout/apache2/mod_passenger.so'/}`
+
+  cp -f inst-script/rhel6/httpd-redmine.conf /etc/httpd/conf.d/redmine.conf
+  sed -i -e 's/%HOSTNAME%/'$HOSTNAME'/' /etc/httpd/conf.d/redmine.conf
+  sed -i -e 's@^LoadModule.*@LoadModule passenger_module '"$PASSENGER_PATH"'@' /etc/httpd/conf.d/redmine.conf
+  sed -i -e 's@^PassengerRoot.*@PassengerRoot '"$PASSENGER_DIR"'@' /etc/httpd/conf.d/redmine.conf
+  sed -i -e 's@^PassengerRuby.*@PassengerRuby /usr/local/bin/ruby@' /etc/httpd/conf.d/redmine.conf
+
+
+  if [ "$SSL" = "y" ]
+  then
+      sed -i -e 's/#Rewrite/Rewrite/' /etc/httpd/conf.d/redmine.conf
+  fi
+
+  sed -i -e 's/%HOSTNAME%/'$HOSTNAME'/' inst-script/rhel6/httpd-vcs.conf >  /etc/httpd/conf.d/vcs.conf
+
   if [ "$SSL" = "y" ]
   then
       CHK=`grep "^DocumentRoot /opt/alminium/public" /etc/httpd/conf.d/ssl.conf`
       if [ "$CHK" = "" ]
       then
-          sed -i 's/#DocumentRoot "\/var\/www\/html"/DocumentRoot \/opt\/alminium\/public/' /etc/httpd/conf.d/ssl.conf
-          sed -i 's/#ServerName www.example.com:443/ServerName '$HOSTNAME':443/' /etc/httpd/conf.d/ssl.conf
+          sed -i -e 's/#DocumentRoot "\/var\/www\/html"/DocumentRoot \/opt\/alminium\/public/' /etc/httpd/conf.d/ssl.conf
+          sed -i -e 's/#ServerName www.example.com:443/ServerName '$HOSTNAME':443/' /etc/httpd/conf.d/ssl.conf
       fi
   fi
+
   cp -f inst-script/rhel6/httpd-maven.conf /etc/httpd/conf.d/maven.conf
 fi
-          
-# セキュリティ無効化の設定        
+
+# セキュリティ無効化の設定
 if [ ! "$USE_DISABLE_SECURITY" = "n" ]
 then
   # SELinuxを無効化
   echo 0 > /selinux/enforce
   CHK=`grep SELINUX=enforcing /etc/selinux/config`
-  if [ ! "$CHK" = '' ]                            
-  then                
-    sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config 
-    echo "SELinuxが無効化されました"          
+  if [ ! "$CHK" = '' ]
+  then
+    sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+    echo "SELinuxが無効化されました"
   fi
-              
+
   # ファイアウォールの設定で80番(http)を許可
   CHK=`grep "dport 80" /etc/sysconfig/iptables`
-  if [ "$CHK" = '' ]                           
-  then              
+  if [ "$CHK" = '' ]
+  then
     RULENUM=`iptables-save |grep INPUT |grep -n "dport 22"|awk -F : '{print $1}'`
     iptables -I  INPUT ${RULENUM} -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT
     iptables-save > /etc/sysconfig/iptables
     echo "tcp 80番ポートのアクセスを許可しました"
-  fi                                               
+  fi
   CHK=`grep "dport 443" /etc/sysconfig/iptables`
-  if [ "$CHK" = '' ]                           
-  then              
+  if [ "$CHK" = '' ]
+  then
     RULENUM=`iptables-save |grep INPUT |grep -n "dport 22"|awk -F : '{print $1}'`
-    iptables -I  INPUT ${RULENUM} -p tcp -m state --state NEW -m tcp --dport 443 -j ACCEPT    
+    iptables -I  INPUT ${RULENUM} -p tcp -m state --state NEW -m tcp --dport 443 -j ACCEPT
     iptables-save > /etc/sysconfig/iptables
     echo "tcp 443番ポートのアクセスを許可しました"
-  fi                                               
+  fi
 fi
-    
+
 chkconfig --add httpd
 chkconfig httpd on
 service httpd stop

@@ -7,7 +7,7 @@ echo "  セキュリティの設定"
 echo "*******************************************************"
 echo "アプリケーションを動作させるために、ファイアフォールの設定とSELinuxの無効化を行います。"
 echo "nと答えると手動でセキュリティの設定が必要となります。分らない場合はYと答えてください。"
-echo 
+echo
 echo -n "アプリケーションを動作させるためにセキュリティの設定を行いますか?[Y/n]"
 read USE_DISABLE_SECURITY
 fi
@@ -42,7 +42,16 @@ chkconfig --add mysqld
 chkconfig mysqld on
 service mysqld start
 
-if [[ `which ruby` == "" || ! `ruby --version` =~ 2.1. ]]
+if [[ `which ruby` == "" || ! `ruby --version` =~ 2.1.x ]]
 then
-    rpm -Uvh "https://github.com/hansode/ruby-rpm/blob/master/6/x86_64/ruby-2.1.2-2.el6.x86_64.rpm?raw=true"
+    pushd .
+
+    cd /tmp
+    curl -O https://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.2.tar.gz
+    tar xvf ruby-2.1.2.tar.gz
+    cd ruby-2.1.2
+    ./configure --disable-install-doc
+    make && make install
+
+    popd
 fi
