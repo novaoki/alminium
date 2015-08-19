@@ -23,7 +23,7 @@ then
       sed -i -e 's/#Rewrite/Rewrite/' /etc/httpd/conf.d/redmine.conf
   fi
 
-  sed -i -e 's/%HOSTNAME%/'$HOSTNAME'/' inst-script/rhel6/httpd-vcs.conf >  /etc/httpd/conf.d/vcs.conf
+  cp -f inst-script/rhel6/httpd-vcs.conf /etc/httpd/conf.d/vcs.conf
 
   if [ "$SSL" = "y" ]
   then
