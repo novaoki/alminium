@@ -95,12 +95,6 @@ then
   sed -i "1i $:.unshift '/opt/alminium/lib'" plugins/redmine_charts/lib/redmine_charts/line_data_converter.rb
 fi
 
-pushd .
-cd plugins/redmine_code_review
-sudo -u apache hg checkout 0.6.4
-popd
-
-
 bundle install --path vendor/bundler --without development test postgresql sqlite
 
 bundle exec $RAKE redmine:plugins:migrate
