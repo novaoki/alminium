@@ -66,7 +66,10 @@ Git Branch Hook| Gitのブランチでの作業をチケットに連動させま
 下記の通り実行すれば、ALMiniumのインストーラを実行できます。
 
 ```
- # yum install git 
+ ※CentOS 6.6 用にに修正時
+ # yum -y update
+ # yum -y install git libyaml ruby-devel
+ ~~# yum -y install git~~
 もしくは
  # apt-get install git
 
@@ -131,7 +134,7 @@ $ git clone http://ユーザ名@ホスト名/git/リポジトリ名
 $ cd リポジトリ名
 $ touch dummy.txt
 $ git add dummy.txt
-$ git commit -a -m "add dummy file." 
+$ git commit -a -m "add dummy file."
 $ git push
 ```
 
