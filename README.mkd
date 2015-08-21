@@ -66,10 +66,11 @@ Git Branch Hook| Gitのブランチでの作業をチケットに連動させま
 下記の通り実行すれば、ALMiniumのインストーラを実行できます。
 
 ```
- ※CentOS 6.6 用にに修正時
+ # yum -y install git
+
+ ※CentOS 6.6 動作用に修正した際は以下
  # yum -y update
  # yum -y install git libyaml ruby-devel
- ~~# yum -y install git~~
 もしくは
  # apt-get install git
 
